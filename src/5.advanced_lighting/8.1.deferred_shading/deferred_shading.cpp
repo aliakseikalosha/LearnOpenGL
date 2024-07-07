@@ -23,7 +23,16 @@ void renderCube();
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+// Deapth of field effect
+float focusSize = 1.0;
+float focusDepth = 0.0;
 
+const float MAX_FOCUS_SIZE = 10;
+const float MIX_FOCUS_SIZE = 0.5;
+
+const float MAX_FOCUS_DEPTH = 20;
+const float MIX_FOCUS_DEPTH = 0.0;
+glm::vec2 pixelSize;
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 float lastX = (float)SCR_WIDTH / 2.0;
@@ -33,6 +42,7 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
 
 int main()
 {
@@ -82,7 +92,7 @@ int main()
     // build and compile shaders
     // -------------------------
     Shader shaderGeometryPass("8.1.g_buffer.vs", "8.1.g_buffer.fs");
-    Shader shaderLightingPass("8.1.deferred_shading.vs", "8.1.deferred_shading.fs");
+    Shader shaderLightingPass("8.1.deferred_shading.vs", "8.1.deferred_shading.frag");
     Shader shaderLightBox("8.1.deferred_light_box.vs", "8.1.deferred_light_box.fs");
 
     // load models
@@ -168,6 +178,9 @@ int main()
     shaderLightingPass.setInt("gNormal", 1);
     shaderLightingPass.setInt("gAlbedoSpec", 2);
 
+    //pixel size set
+    pixelSize.x = 1.0f / SCR_WIDTH;
+    pixelSize.y = 1.0f / SCR_HEIGHT;
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -229,6 +242,9 @@ int main()
             shaderLightingPass.setFloat("lights[" + std::to_string(i) + "].Quadratic", quadratic);
         }
         shaderLightingPass.setVec3("viewPos", camera.Position);
+        shaderLightingPass.setFloat("focusDepth", focusDepth);
+        shaderLightingPass.setFloat("focusSize", focusSize);
+        shaderLightingPass.setVec2("pixelSize", pixelSize);
         // finally render quad
         renderQuad();
 
@@ -390,6 +406,15 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+    //Update Focus
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+        focusDepth = clamp(focusDepth + deltaTime, MIX_FOCUS_DEPTH, MAX_FOCUS_DEPTH);
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+        focusDepth = clamp(focusDepth - deltaTime, MIX_FOCUS_DEPTH, MAX_FOCUS_DEPTH);
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+        focusSize = clamp(focusSize + deltaTime, MIX_FOCUS_SIZE, MAX_FOCUS_SIZE);
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+        focusSize = clamp(focusSize - deltaTime, MIX_FOCUS_SIZE, MAX_FOCUS_SIZE);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
